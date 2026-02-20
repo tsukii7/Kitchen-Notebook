@@ -1,0 +1,32 @@
+/* Navigation Buttons (Top Level) - Pill Shape */
+.nav-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 2px solid transparent;
+    border-radius: 50px;
+    /* Pill shape */
+    color: var(--color-ink-muted);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: var(--font-heading);
+    /* Sizing handled inline or by padding */
+}
+
+.nav-btn:hover {
+    background: rgba(255, 255, 255, 0.5);
+    color: var(--color-ink);
+}
+
+.nav-btn--active {
+    background: var(--color-white);
+    border: 2px solid var(--color-ink);
+    color: var(--color-ink);
+    box-shadow: var(--shadow-hard-sm);
+    transform: rotate(-1deg);
+}
+
+.nav-btn--active:hover {
+    transform: rotate(-1deg) scale(1.02);
+}
