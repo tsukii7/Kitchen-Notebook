@@ -372,7 +372,9 @@ app.get('/api/health', (req, res) => {
 // ============================================
 app.use(express.static(path.join(__dirname, '../dist')));
 
-app.get('*', (req, res) => {
+// Fallback for React Router (Single Page Application)
+// Replaced '*' with '*(.*)' or just use a basic middleware error fallback
+app.get('/*', (req, res) => {
     res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 
