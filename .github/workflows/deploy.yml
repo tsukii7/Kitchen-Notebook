@@ -21,6 +21,10 @@ jobs:
         key: ${{ secrets.SERVER_SSH_KEY }}   # SSH private key
         port: ${{ secrets.SERVER_PORT }}     # SSH port (usually 22)
         script: |
+          # Source NVM so we can use npm and pm2 in this non-interactive shell
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
           # Navigate to project directory (set this in GitHub Secrets)
           cd ${{ secrets.PROJECT_PATH }}
           
