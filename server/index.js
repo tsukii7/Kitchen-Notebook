@@ -367,6 +367,15 @@ app.get('/api/health', (req, res) => {
     });
 });
 
+// ============================================
+// Serve Frontend Static Files (Production)
+// ============================================
+app.use(express.static(path.join(__dirname, '../dist')));
+
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../dist/index.html'));
+});
+
 // Start
 app.listen(PORT, () => {
     const hasKey = !!process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'your_gemini_api_key_here';
