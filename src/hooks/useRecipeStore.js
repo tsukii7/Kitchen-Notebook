@@ -253,6 +253,16 @@ export function useRecipeStore() {
         ));
     }, []);
 
+    /** 按 _id 整体更新一道已保存的菜（菜名可变，故不按名匹配） */
+    const updateDish = useCallback((id, newDish) => {
+        if (newDish.category && newDish.category !== '未分类') {
+            setCategories(prev => (prev.includes(newDish.category) ? prev : [...prev, newDish.category]));
+        }
+        setSavedDishes(prev => prev.map(d =>
+            d._id === id ? { ...newDish, _id: id, _savedAt: Date.now() } : d
+        ));
+    }, []);
+
     /** 整库替换（用于"整库替换"式导入或还原） */
     const replaceAll = useCallback((dishes, cats) => {
         setSavedDishes(dishes.map(d => ({
@@ -301,5 +311,6 @@ export function useRecipeStore() {
         addCategory,
         deleteCategory,
         updateDishCategory,
+        updateDish,
     };
 }

@@ -226,6 +226,7 @@ function App() {
                                 addCategory={store.addCategory}
                                 deleteCategory={store.deleteCategory}
                                 updateDishCategory={store.updateDishCategory}
+                                updateDish={store.updateDish}
                                 addToast={addToast}
                                 exportData={store.exportData}
                                 importLibrary={store.importLibrary}
