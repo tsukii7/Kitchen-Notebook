@@ -24,9 +24,23 @@ function userFile(userId, baseDir) {
 export function readLibrary(userId, baseDir = DEFAULT_BASE) {
     const file = userFile(userId, baseDir);
     if (!fs.existsSync(file)) {
-        return { dishes: [], categories: DEFAULT_CATEGORIES, updatedAt: null };
+        return { dishes: [], categories: [...DEFAULT_CATEGORIES], updatedAt: null };
     }
-    return JSON.parse(fs.readFileSync(file, 'utf8'));
+    const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+    if (!data || typeof data !== 'object' || !Array.isArray(data.dishes)) {
+        throw new Error(`菜库文件格式损坏: ${file}`);
+    }
+    return data;
+}
+
+function atomicReplace(tmp, file) {
+    try {
+        fs.renameSync(tmp, file);
+    } catch {
+        // Windows can throw EPERM renaming onto an existing file; fall back to copy
+        fs.copyFileSync(tmp, file);
+        fs.unlinkSync(tmp);
+    }
 }
 
 export function writeLibrary(userId, { dishes, categories }, updatedAt, baseDir = DEFAULT_BASE) {
@@ -38,10 +52,10 @@ export function writeLibrary(userId, { dishes, categories }, updatedAt, baseDir 
     const tmp = `${file}.tmp`;
     const payload = {
         dishes,
-        categories: Array.isArray(categories) ? categories : DEFAULT_CATEGORIES,
+        categories: Array.isArray(categories) ? categories : [...DEFAULT_CATEGORIES],
         updatedAt: updatedAt ?? null,
     };
     fs.writeFileSync(tmp, JSON.stringify(payload, null, 2), 'utf8');
-    fs.renameSync(tmp, file);
+    atomicReplace(tmp, file);
     return payload;
 }

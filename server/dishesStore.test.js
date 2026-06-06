@@ -56,3 +56,19 @@ describe('writeLibrary', () => {
         expect(lib.dishes[0].dish_name).toBe('d4');
     });
 });
+
+describe('readLibrary corruption guard', () => {
+    it('throws when file exists but has wrong shape', () => {
+        const file = path.join(baseDir, 'default.json');
+        fs.writeFileSync(file, JSON.stringify({ notDishes: true }), 'utf8');
+        expect(() => readLibrary('default', baseDir)).toThrow();
+    });
+});
+
+describe('writeLibrary error path', () => {
+    it('leaves no .tmp file when dishes is invalid', () => {
+        expect(() => writeLibrary('default', { dishes: null }, null, baseDir)).toThrow();
+        const leftovers = fs.readdirSync(baseDir).filter(f => f.endsWith('.tmp'));
+        expect(leftovers).toEqual([]);
+    });
+});
