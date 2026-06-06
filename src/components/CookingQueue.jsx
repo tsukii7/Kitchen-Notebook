@@ -5,6 +5,9 @@ import { mergeIngredients, CATEGORIES } from '../utils/ingredientNormalizer';
 import { UtensilsCrossed, Trash2, Maximize2, X, Download, Share2, CornerDownRight, ExternalLink, ChevronDown, AlertTriangle, ShoppingCart, Inbox, Loader2, Camera } from 'lucide-react';
 import { useWobbly } from '../hooks/useWobbly';
 import { useTranslation } from 'react-i18next';
+import { buildBackup } from '../utils/recipeBackup.js';
+import ImportConflictModal from './ImportConflictModal.jsx';
+import { useImportBackup } from '../hooks/useImportBackup.js';
 
 // Align with ResultsView colors
 const CAT_COLORS = {
@@ -91,6 +94,9 @@ function CookingQueue({
     deleteCategory,
     updateDishCategory,
     addToast,
+    exportData,
+    importLibrary,
+    replaceAll,
 }) {
     const { t } = useTranslation();
     const [showMerged, setShowMerged] = useState(false);
@@ -102,6 +108,9 @@ function CookingQueue({
     const [newCategoryName, setNewCategoryName] = useState('');
     const [confirmDeleteCategory, setConfirmDeleteCategory] = useState(null);
     const exportRef = useRef(null);
+
+    const { conflictState, fileInputRef, handleImportFile, applyResolutions, cancelConflicts } =
+        useImportBackup({ savedDishes, importLibrary, addToast });
 
     // Auto-expand newly added dishes (within last 2 seconds)
     React.useEffect(() => {
@@ -163,6 +172,21 @@ function CookingQueue({
         setShowClearConfirm(false);
     }, [clearAll]);
 
+    const handleExportBackup = () => {
+        const { dishes, categories: cats } = exportData();
+        const backup = buildBackup(dishes, cats);
+        const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const d = new Date();
+        const stamp = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        a.download = `kitchen-backup_${stamp}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        addToast('已导出菜库备份', 'success');
+    };
+
     if (savedDishes.length === 0) {
         return (
             <div className="queue-section">
@@ -195,6 +219,10 @@ function CookingQueue({
                     <div className="queue-actions" style={{ display: 'flex', gap: '0.5rem' }}>
                         <button className="btn-sm queue-btn" onClick={selectAll} style={{ fontSize: '0.9rem', padding: '0.3rem 0.8rem' }}>{t('queue.selectAll')}</button>
                         <button className="btn-sm queue-btn" onClick={clearQueue} style={{ fontSize: '0.9rem', padding: '0.3rem 0.8rem' }}>{t('queue.clearSelection')}</button>
+                        <button className="btn-sm queue-btn" onClick={handleExportBackup} style={{ fontSize: '0.9rem', padding: '0.3rem 0.8rem' }}>导出备份</button>
+                        <input ref={fileInputRef} type="file" accept="application/json" style={{ display: 'none' }}
+                            onChange={(e) => handleImportFile(e.target.files?.[0])} />
+                        <button className="btn-sm queue-btn" style={{ fontSize: '0.9rem', padding: '0.3rem 0.8rem' }} onClick={() => fileInputRef.current?.click()}>导入备份</button>
                         <button className="btn-sm queue-btn btn-danger" onClick={() => setShowClearConfirm(true)} style={{ fontSize: '0.9rem', padding: '0.3rem 0.8rem' }}>{t('queue.clearAll')}</button>
                     </div>
                 </div>
@@ -728,6 +756,14 @@ function CookingQueue({
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {conflictState && (
+                <ImportConflictModal
+                    conflicts={conflictState.conflicts}
+                    onResolve={applyResolutions}
+                    onCancel={cancelConflicts}
+                />
+            )}
         </div>
     );
 }

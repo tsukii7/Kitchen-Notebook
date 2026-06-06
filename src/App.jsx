@@ -227,6 +227,9 @@ function App() {
                                 deleteCategory={store.deleteCategory}
                                 updateDishCategory={store.updateDishCategory}
                                 addToast={addToast}
+                                exportData={store.exportData}
+                                importLibrary={store.importLibrary}
+                                replaceAll={store.replaceAll}
                             />
                         </motion.div>
                     ) : (

@@ -37,3 +37,6 @@ dist-ssr
 # Server upload temp files
 server/uploads/
 uploads/
+
+# Server data directory
+server/data/

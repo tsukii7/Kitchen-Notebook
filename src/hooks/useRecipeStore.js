@@ -1,4 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+/**
+ * [IN]: react, dishesApi(fetchLibrary/pushLibrary); localStorage(STORAGE_KEY, QUEUE_KEY, recipe_categories)
+ * [OUT]: useRecipeStore() — 菜库主 store：mount 时从后端拉取/迁移，变更后 800ms 防抖推送；暴露 syncState、importLibrary、replaceAll、exportData 及完整 CRUD
+ * [POS]: 被 App.jsx 实例化，props 下发至 CookingQueue、ResultsView 等
+ * [PROTOCOL]: 变更接口形态时同步本头部、src/hooks/CLAUDE.md；变更后端协议时同步 dishesApi.js 与 server/index.js
+ */
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { fetchLibrary, pushLibrary } from '../api/dishesApi.js';
 
 const STORAGE_KEY = 'recipe_saved_dishes';
 const QUEUE_KEY = 'recipe_cooking_queue';
@@ -17,6 +24,21 @@ function saveJSON(key, value) {
 }
 
 /**
+ * 决定初始菜库来源：远端有数据用远端；远端空但本地有则迁移；否则空。
+ * 只做 I/O，不碰 React 状态。可能抛出（由调用方降级处理）。
+ */
+async function resolveInitialLibrary(localDishes, localCategories) {
+    const lib = await fetchLibrary();
+    if (Array.isArray(lib.dishes) && lib.dishes.length > 0) {
+        return { dishes: lib.dishes, categories: lib.categories };
+    }
+    if (localDishes.length > 0) {
+        await pushLibrary({ dishes: localDishes, categories: localCategories });
+    }
+    return {};
+}
+
+/**
  * Hook for managing saved recipes and cooking queue.
  * - savedDishes: all saved dishes (persisted in localStorage)
  * - queue: dish IDs selected for ingredient merging
@@ -26,6 +48,11 @@ export function useRecipeStore() {
     const [queue, setQueue] = useState(() => loadJSON(QUEUE_KEY, []));
 
     const [categories, setCategories] = useState(() => loadJSON('recipe_categories', ['荤菜', '素菜', '汤煲', '主食', '烘焙', '小吃']));
+
+    // 后端同步状态：'syncing' | 'synced' | 'local-only'
+    const [syncState, setSyncState] = useState('syncing');
+    const hydratedRef = useRef(false);   // 是否已完成首次后端拉取
+    const pushTimerRef = useRef(null);    // 防抖计时器
 
     // Migration & Validation
     useEffect(() => {
@@ -44,10 +71,45 @@ export function useRecipeStore() {
         }
     }, [categories]);
 
+    // 挂载：从后端拉取；后端空但本地有数据则迁移；连不上则降级本地
+    useEffect(() => {
+        let cancelled = false;
+        resolveInitialLibrary(savedDishes, categories)
+            .then((result) => {
+                if (cancelled) return;
+                if (result.dishes) setSavedDishes(result.dishes);
+                if (Array.isArray(result.categories) && result.categories.length) {
+                    setCategories(result.categories);
+                }
+                setSyncState('synced');
+            })
+            .catch(() => {
+                if (!cancelled) setSyncState('local-only');
+            })
+            .finally(() => {
+                if (!cancelled) hydratedRef.current = true;
+            });
+        return () => { cancelled = true; };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     // Persist on change
     useEffect(() => { saveJSON(STORAGE_KEY, savedDishes); }, [savedDishes]);
     useEffect(() => { saveJSON(QUEUE_KEY, queue); }, [queue]);
     useEffect(() => { saveJSON('recipe_categories', categories); }, [categories]);
+
+    // 菜/分类变更后防抖推送整库到后端（挂载拉取完成后才推，避免覆盖远端）
+    useEffect(() => {
+        if (!hydratedRef.current) return;
+        if (pushTimerRef.current) clearTimeout(pushTimerRef.current);
+        pushTimerRef.current = setTimeout(() => {
+            setSyncState('syncing');
+            pushLibrary({ dishes: savedDishes, categories })
+                .then(() => setSyncState('synced'))
+                .catch(() => setSyncState('local-only'));
+        }, 800);
+        return () => { if (pushTimerRef.current) clearTimeout(pushTimerRef.current); };
+    }, [savedDishes, categories]);
 
     /** Generate a robust unique ID */
     const generateId = () => {
@@ -191,11 +253,43 @@ export function useRecipeStore() {
         ));
     }, []);
 
+    /** 整库替换（用于"整库替换"式导入或还原） */
+    const replaceAll = useCallback((dishes, cats) => {
+        setSavedDishes(dishes.map(d => ({
+            ...d,
+            _id: d._id || generateId(),
+            _savedAt: d._savedAt || Date.now(),
+        })));
+        if (Array.isArray(cats) && cats.length) setCategories(cats);
+    }, []);
+
+    /** 应用合并后的菜库（冲突已由调用方解决） */
+    const importLibrary = useCallback((mergedDishes, cats) => {
+        setSavedDishes(mergedDishes.map(d => ({
+            ...d,
+            _id: d._id || generateId(),
+            _savedAt: d._savedAt || Date.now(),
+        })));
+        if (Array.isArray(cats) && cats.length) {
+            setCategories(prev => Array.from(new Set([...prev, ...cats])));
+        }
+    }, []);
+
+    /** 导出当前整库快照 */
+    const exportData = useCallback(() => ({
+        dishes: savedDishes,
+        categories,
+    }), [savedDishes, categories]);
+
     return {
         savedDishes,
         queue,
         queueDishes,
         categories,
+        syncState,
+        replaceAll,
+        importLibrary,
+        exportData,
         saveDish,
         saveDishes,
         removeDish,
