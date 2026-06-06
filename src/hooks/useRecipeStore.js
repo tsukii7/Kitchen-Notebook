@@ -18,6 +18,21 @@ function saveJSON(key, value) {
 }
 
 /**
+ * 决定初始菜库来源：远端有数据用远端；远端空但本地有则迁移；否则空。
+ * 只做 I/O，不碰 React 状态。可能抛出（由调用方降级处理）。
+ */
+async function resolveInitialLibrary(localDishes, localCategories) {
+    const lib = await fetchLibrary();
+    if (Array.isArray(lib.dishes) && lib.dishes.length > 0) {
+        return { dishes: lib.dishes, categories: lib.categories };
+    }
+    if (localDishes.length > 0) {
+        await pushLibrary({ dishes: localDishes, categories: localCategories });
+    }
+    return {};
+}
+
+/**
  * Hook for managing saved recipes and cooking queue.
  * - savedDishes: all saved dishes (persisted in localStorage)
  * - queue: dish IDs selected for ingredient merging
@@ -53,29 +68,21 @@ export function useRecipeStore() {
     // 挂载：从后端拉取；后端空但本地有数据则迁移；连不上则降级本地
     useEffect(() => {
         let cancelled = false;
-        (async () => {
-            try {
-                const lib = await fetchLibrary();
+        resolveInitialLibrary(savedDishes, categories)
+            .then((result) => {
                 if (cancelled) return;
-                const hasRemote = Array.isArray(lib.dishes) && lib.dishes.length > 0;
-                if (hasRemote) {
-                    setSavedDishes(lib.dishes);
-                    if (Array.isArray(lib.categories) && lib.categories.length) {
-                        setCategories(lib.categories);
-                    }
-                    setSyncState('synced');
-                } else if (savedDishes.length > 0) {
-                    await pushLibrary({ dishes: savedDishes, categories });
-                    setSyncState('synced');
-                } else {
-                    setSyncState('synced');
+                if (result.dishes) setSavedDishes(result.dishes);
+                if (Array.isArray(result.categories) && result.categories.length) {
+                    setCategories(result.categories);
                 }
-            } catch {
+                setSyncState('synced');
+            })
+            .catch(() => {
                 if (!cancelled) setSyncState('local-only');
-            } finally {
+            })
+            .finally(() => {
                 if (!cancelled) hydratedRef.current = true;
-            }
-        })();
+            });
         return () => { cancelled = true; };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
