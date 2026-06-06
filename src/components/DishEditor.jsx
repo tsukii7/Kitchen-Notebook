@@ -1,80 +1,16 @@
 /**
- * [IN]: react, framer-motion, react-i18next, lucide-react(Plus/Trash2/ChevronDown), dishDraft(emptyIngredient/normalizeDishDraft)
+ * [IN]: react, lucide-react(Plus/Trash2), dishDraft(emptyIngredient/normalizeDishDraft), CustomSelect, ingredientColors(CAT_COLORS)
  * [OUT]: DishEditor — 编辑一道菜（菜名/分类/含单位食材/步骤）的共享表单
  * [POS]: 被 ResultsView 与 CookingQueue 复用；onSave 收到规整后的菜对象
  * [PROTOCOL]: 变更字段集时同步更新本头部、dishDraft、相关消费方与设计文档
- *
- * 注：CustomSelect 与 CAT_COLORS 当前在 ResultsView.jsx 内联定义且未导出，
- * 为保持外观一致且不改动 ResultsView，这里按相同实现复刻。后续应抽到共享模块。
  */
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { useTranslation } from 'react-i18next';
-import { Plus, Trash2, ChevronDown } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { emptyIngredient, normalizeDishDraft } from '../utils/dishDraft.js';
+import CustomSelect from './CustomSelect.jsx';
+import { CAT_COLORS } from '../utils/ingredientColors.js';
 
 const inputStyle = { padding: '0.4rem', border: '2px solid var(--color-ink)', borderRadius: '4px' };
-
-// 与 ResultsView.jsx 保持一致的分类配色
-const CAT_COLORS = {
-    '主料': { bg: 'var(--color-rose)', border: 'var(--color-rose-border)' },
-    '蔬菜': { bg: 'var(--color-mint)', border: 'var(--color-mint-border)' },
-    '调料': { bg: 'var(--color-peach)', border: 'var(--color-peach-border)' },
-    '香料': { bg: 'var(--color-lavender)', border: 'var(--color-lavender-border)' },
-    '液体': { bg: 'var(--color-blue)', border: 'var(--color-blue-border)' },
-    '其他': { bg: 'var(--color-paper)', border: 'var(--color-ink)' },
-};
-
-// 与 ResultsView.jsx 保持一致的下拉选择器
-const CustomSelect = ({ value, onChange, options }) => {
-    const { t } = useTranslation();
-    const [open, setOpen] = useState(false);
-    return (
-        <div style={{ position: 'relative', width: '90px' }}>
-            <div
-                onClick={() => setOpen(!open)}
-                style={{
-                    padding: '0.4rem', border: '2px solid var(--color-ink)', borderRadius: '4px',
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    cursor: 'pointer', background: 'var(--color-white)', color: 'var(--color-ink)',
-                    fontSize: '0.9rem',
-                }}
-            >
-                {t(`ingCategories.${value}`, value)} <ChevronDown size={14} />
-            </div>
-            {open && (
-                <>
-                    <div style={{ position: 'fixed', inset: 0, zIndex: 9 }} onClick={() => setOpen(false)} />
-                    <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        style={{
-                            position: 'absolute', top: '100%', left: 0, width: '100%',
-                            background: 'var(--color-white)', border: '2px solid var(--color-ink)',
-                            borderRadius: '4px', zIndex: 10, marginTop: '2px',
-                            boxShadow: '2px 2px 0 var(--color-ink)', overflow: 'hidden',
-                        }}
-                    >
-                        {options.map(opt => (
-                            <div
-                                key={opt}
-                                onClick={() => { onChange(opt); setOpen(false); }}
-                                style={{
-                                    padding: '0.4rem', cursor: 'pointer',
-                                    borderBottom: '1px solid rgba(0,0,0,0.05)',
-                                    background: value === opt ? 'rgba(0,0,0,0.05)' : 'white',
-                                    fontSize: '0.9rem',
-                                }}
-                            >
-                                {t(`ingCategories.${opt}`, opt)}
-                            </div>
-                        ))}
-                    </motion.div>
-                </>
-            )}
-        </div>
-    );
-};
 
 const removeBtnStyle = {
     background: 'none', border: 'none', color: 'var(--color-accent)', cursor: 'pointer', padding: '0.2rem',

@@ -4,56 +4,8 @@ import { ClipboardList, ShoppingCart, UtensilsCrossed, ChevronDown, Save, Check,
 import { useTranslation } from 'react-i18next';
 import { CATEGORIES } from '../utils/ingredientNormalizer';
 import { useWobbly } from '../hooks/useWobbly';
-
-const CustomSelect = ({ value, onChange, options }) => {
-    const { t } = useTranslation();
-    const [open, setOpen] = React.useState(false);
-    return (
-        <div style={{ position: 'relative', width: '90px' }}>
-            <div
-                onClick={() => setOpen(!open)}
-                style={{
-                    padding: '0.4rem', border: '2px solid var(--color-ink)', borderRadius: '4px',
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    cursor: 'pointer', background: 'var(--color-white)', color: 'var(--color-ink)',
-                    fontSize: '0.9rem'
-                }}
-            >
-                {t(`ingCategories.${value}`, value)} <ChevronDown size={14} />
-            </div>
-            {open && (
-                <>
-                    <div style={{ position: 'fixed', inset: 0, zIndex: 9 }} onClick={() => setOpen(false)} />
-                    <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        style={{
-                            position: 'absolute', top: '100%', left: 0, width: '100%',
-                            background: 'var(--color-white)', border: '2px solid var(--color-ink)',
-                            borderRadius: '4px', zIndex: 10, marginTop: '2px',
-                            boxShadow: '2px 2px 0 var(--color-ink)', overflow: 'hidden'
-                        }}
-                    >
-                        {options.map(opt => (
-                            <div
-                                key={opt}
-                                onClick={() => { onChange(opt); setOpen(false); }}
-                                style={{
-                                    padding: '0.4rem', cursor: 'pointer',
-                                    borderBottom: '1px solid rgba(0,0,0,0.05)',
-                                    background: value === opt ? 'rgba(0,0,0,0.05)' : 'white',
-                                    fontSize: '0.9rem'
-                                }}
-                            >
-                                {t(`ingCategories.${opt}`, opt)}
-                            </div>
-                        ))}
-                    </motion.div>
-                </>
-            )}
-        </div>
-    );
-};
+import CustomSelect from './CustomSelect.jsx';
+import { CAT_COLORS } from '../utils/ingredientColors.js';
 
 const ALL_CATEGORIES = ['全部', ...Object.keys(CATEGORIES), '其他'];
 
@@ -66,15 +18,6 @@ const COLOR_PALETTE = [
     { bg: 'var(--color-lavender)', border: 'var(--color-lavender-border)' },
     { bg: 'var(--color-peach)', border: 'var(--color-peach-border)' },
 ];
-
-const CAT_COLORS = {
-    '主料': { bg: 'var(--color-rose)', border: 'var(--color-rose-border)' },
-    '蔬菜': { bg: 'var(--color-mint)', border: 'var(--color-mint-border)' },
-    '调料': { bg: 'var(--color-peach)', border: 'var(--color-peach-border)' },
-    '香料': { bg: 'var(--color-lavender)', border: 'var(--color-lavender-border)' },
-    '液体': { bg: 'var(--color-blue)', border: 'var(--color-blue-border)' },
-    '其他': { bg: 'var(--color-paper)', border: 'var(--color-ink)' }
-};
 
 function ResultsView({ dishes, shoppingList, rawText, onReset, onExportJSON, onExportMarkdown, onSaveDish, onUpdateDish, onSaveAll, isDishSaved }) {
     const { t } = useTranslation();
