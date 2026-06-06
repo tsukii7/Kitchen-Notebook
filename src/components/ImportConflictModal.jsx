@@ -1,8 +1,8 @@
 /**
- * [IN]: react；props: conflicts, onResolve, onCancel
- * [OUT]: ImportConflictModal — 逐个解决导入重名/相似冲突
- * [POS]: 被 CookingQueue 在导入时挂载
- * [PROTOCOL]: 变更冲突数据结构时同步 recipeBackup.mergeLibrary 与设计文档
+ * [IN]: react；props: conflicts({current,incoming}[]), onResolve, onCancel
+ * [OUT]: ImportConflictModal (default) — 逐个解决导入重名/相似冲突；CHOICES 常量（keep_current/use_incoming/keep_both）
+ * [POS]: 被 CookingQueue 挂载；CHOICES 被 useImportBackup 引用
+ * [PROTOCOL]: 变更冲突数据结构或 CHOICES 值时同步 recipeBackup.mergeLibrary、useImportBackup 与设计文档
  */
 import React, { useState } from 'react';
 
