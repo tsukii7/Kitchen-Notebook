@@ -14,10 +14,11 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { getUserId, readLibrary, writeLibrary } from './dishesStore.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 4000;
 
 // Multer: store uploaded files temporarily
 const upload = multer({
@@ -34,7 +35,7 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
 // Gemini client
-const MODEL_NAME = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+const MODEL_NAME = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 const MAX_RETRIES = 3;
 
 function getModel() {
@@ -313,6 +314,9 @@ ${text}`;
                 generationConfig: {
                     temperature: 0.2,
                     maxOutputTokens: 4096,
+                    // gemini-2.5-flash 是思考型模型，思考会吃光 output 预算导致 JSON 截断；
+                    // 结构化解析无需思考，关闭以避免截断并提速降本
+                    thinkingConfig: { thinkingBudget: 0 },
                 },
             }),
             'ParseRecipe'
@@ -365,6 +369,32 @@ app.get('/api/health', (req, res) => {
         model: MODEL_NAME,
         provider: 'Google Gemini',
     });
+});
+
+// ============================================
+// 菜库持久化 — GET/PUT /api/dishes
+// ============================================
+app.get('/api/dishes', (req, res) => {
+    try {
+        res.json(readLibrary(getUserId(req)));
+    } catch (err) {
+        console.error('[Dishes] read error:', err.message);
+        res.status(500).json({ error: cleanError(err) });
+    }
+});
+
+app.put('/api/dishes', (req, res) => {
+    try {
+        const { dishes, categories } = req.body || {};
+        if (!Array.isArray(dishes)) {
+            return res.status(400).json({ error: 'dishes 必须是数组' });
+        }
+        const saved = writeLibrary(getUserId(req), { dishes, categories }, new Date().toISOString());
+        res.json({ ok: true, updatedAt: saved.updatedAt });
+    } catch (err) {
+        console.error('[Dishes] write error:', err.message);
+        res.status(500).json({ error: cleanError(err) });
+    }
 });
 
 // ============================================
