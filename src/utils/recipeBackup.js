@@ -15,6 +15,18 @@ export function buildBackup(dishes, categories) {
     };
 }
 
+function validateBackupShape(data) {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+        throw new Error('备份格式无效');
+    }
+    if (data.version !== BACKUP_VERSION) {
+        throw new Error(`不支持的备份版本：${data.version}`);
+    }
+    if (!Array.isArray(data.dishes)) {
+        throw new Error('备份缺少 dishes 数组');
+    }
+}
+
 export function parseBackup(text) {
     let data;
     try {
@@ -22,9 +34,7 @@ export function parseBackup(text) {
     } catch {
         throw new Error('文件不是合法 JSON');
     }
-    if (!data || typeof data !== 'object') throw new Error('备份格式无效');
-    if (data.version !== BACKUP_VERSION) throw new Error(`不支持的备份版本：${data.version}`);
-    if (!Array.isArray(data.dishes)) throw new Error('备份缺少 dishes 数组');
+    validateBackupShape(data);
     return {
         dishes: data.dishes,
         categories: Array.isArray(data.categories) ? data.categories : [],

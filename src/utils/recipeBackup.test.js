@@ -22,6 +22,12 @@ describe('parseBackup validation', () => {
     it('throws when dishes missing', () => {
         expect(() => parseBackup(JSON.stringify({ version: 1 }))).toThrow();
     });
+    it('throws on JSON array input', () => {
+        expect(() => parseBackup('[]')).toThrow();
+    });
+    it('throws on JSON primitive input', () => {
+        expect(() => parseBackup('42')).toThrow();
+    });
 });
 
 describe('nameSimilarity', () => {
