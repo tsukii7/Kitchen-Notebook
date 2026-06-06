@@ -5,7 +5,8 @@ import { mergeIngredients, CATEGORIES } from '../utils/ingredientNormalizer';
 import { UtensilsCrossed, Trash2, Maximize2, X, Download, Share2, CornerDownRight, ExternalLink, ChevronDown, AlertTriangle, ShoppingCart, Inbox, Loader2, Camera } from 'lucide-react';
 import { useWobbly } from '../hooks/useWobbly';
 import { useTranslation } from 'react-i18next';
-import { buildBackup } from '../utils/recipeBackup.js';
+import { buildBackup, parseBackup, mergeLibrary } from '../utils/recipeBackup.js';
+import ImportConflictModal, { CHOICES } from './ImportConflictModal.jsx';
 
 // Align with ResultsView colors
 const CAT_COLORS = {
@@ -106,6 +107,8 @@ function CookingQueue({
     const [newCategoryName, setNewCategoryName] = useState('');
     const [confirmDeleteCategory, setConfirmDeleteCategory] = useState(null);
     const exportRef = useRef(null);
+    const [conflictState, setConflictState] = useState(null); // { base, conflicts, cats }
+    const fileInputRef = useRef(null);
 
     // Auto-expand newly added dishes (within last 2 seconds)
     React.useEffect(() => {
@@ -182,6 +185,50 @@ function CookingQueue({
         addToast('已导出菜库备份', 'success');
     };
 
+    const dishName = (d) => d.dish_name || d.name || '';
+
+    const handleImportFile = async (file) => {
+        if (!file) return;
+        let parsed;
+        try {
+            parsed = parseBackup(await file.text());
+        } catch (err) {
+            addToast('导入失败：' + err.message, 'error');
+            return;
+        }
+        const { merged, conflicts } = mergeLibrary(savedDishes, parsed.dishes);
+        if (conflicts.length === 0) {
+            importLibrary(merged, parsed.categories);
+            addToast(`已导入，新增 ${merged.length - savedDishes.length} 道菜`, 'success');
+        } else {
+            setConflictState({ base: merged, conflicts, cats: parsed.categories });
+        }
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    const applyOneResolution = (list, conflict, choice) => {
+        if (choice === CHOICES.USE_INCOMING) {
+            return list.map(d =>
+                dishName(d) === dishName(conflict.current) ? conflict.incoming : d
+            );
+        }
+        if (choice === CHOICES.KEEP_BOTH) {
+            return [...list, { ...conflict.incoming, dish_name: dishName(conflict.incoming) + '（导入）' }];
+        }
+        // KEEP_CURRENT: nothing to do — current already in base
+        return list;
+    };
+
+    const applyResolutions = (resolutions) => {
+        let result = [...conflictState.base];
+        for (const { conflict, choice } of resolutions) {
+            result = applyOneResolution(result, conflict, choice);
+        }
+        importLibrary(result, conflictState.cats);
+        addToast('导入完成', 'success');
+        setConflictState(null);
+    };
+
     if (savedDishes.length === 0) {
         return (
             <div className="queue-section">
@@ -215,6 +262,9 @@ function CookingQueue({
                         <button className="btn-sm queue-btn" onClick={selectAll} style={{ fontSize: '0.9rem', padding: '0.3rem 0.8rem' }}>{t('queue.selectAll')}</button>
                         <button className="btn-sm queue-btn" onClick={clearQueue} style={{ fontSize: '0.9rem', padding: '0.3rem 0.8rem' }}>{t('queue.clearSelection')}</button>
                         <button className="btn-sm queue-btn" onClick={handleExportBackup} style={{ fontSize: '0.9rem', padding: '0.3rem 0.8rem' }}>导出备份</button>
+                        <input ref={fileInputRef} type="file" accept="application/json" style={{ display: 'none' }}
+                            onChange={(e) => handleImportFile(e.target.files?.[0])} />
+                        <button className="btn-sm queue-btn" style={{ fontSize: '0.9rem', padding: '0.3rem 0.8rem' }} onClick={() => fileInputRef.current?.click()}>导入备份</button>
                         <button className="btn-sm queue-btn btn-danger" onClick={() => setShowClearConfirm(true)} style={{ fontSize: '0.9rem', padding: '0.3rem 0.8rem' }}>{t('queue.clearAll')}</button>
                     </div>
                 </div>
@@ -748,6 +798,14 @@ function CookingQueue({
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {conflictState && (
+                <ImportConflictModal
+                    conflicts={conflictState.conflicts}
+                    onResolve={applyResolutions}
+                    onCancel={() => setConflictState(null)}
+                />
+            )}
         </div>
     );
 }
