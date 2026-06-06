@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { fetchLibrary, pushLibrary } from '../api/dishesApi.js';
 
 const STORAGE_KEY = 'recipe_saved_dishes';
 const QUEUE_KEY = 'recipe_cooking_queue';
@@ -27,6 +28,11 @@ export function useRecipeStore() {
 
     const [categories, setCategories] = useState(() => loadJSON('recipe_categories', ['荤菜', '素菜', '汤煲', '主食', '烘焙', '小吃']));
 
+    // 后端同步状态：'syncing' | 'synced' | 'local-only'
+    const [syncState, setSyncState] = useState('syncing');
+    const hydratedRef = useRef(false);   // 是否已完成首次后端拉取
+    const pushTimerRef = useRef(null);    // 防抖计时器
+
     // Migration & Validation
     useEffect(() => {
         const oldDefaults = ['早餐', '午餐', '晚餐', '甜点', '夜宵'];
@@ -44,10 +50,53 @@ export function useRecipeStore() {
         }
     }, [categories]);
 
+    // 挂载：从后端拉取；后端空但本地有数据则迁移；连不上则降级本地
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                const lib = await fetchLibrary();
+                if (cancelled) return;
+                const hasRemote = Array.isArray(lib.dishes) && lib.dishes.length > 0;
+                if (hasRemote) {
+                    setSavedDishes(lib.dishes);
+                    if (Array.isArray(lib.categories) && lib.categories.length) {
+                        setCategories(lib.categories);
+                    }
+                    setSyncState('synced');
+                } else if (savedDishes.length > 0) {
+                    await pushLibrary({ dishes: savedDishes, categories });
+                    setSyncState('synced');
+                } else {
+                    setSyncState('synced');
+                }
+            } catch {
+                if (!cancelled) setSyncState('local-only');
+            } finally {
+                if (!cancelled) hydratedRef.current = true;
+            }
+        })();
+        return () => { cancelled = true; };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     // Persist on change
     useEffect(() => { saveJSON(STORAGE_KEY, savedDishes); }, [savedDishes]);
     useEffect(() => { saveJSON(QUEUE_KEY, queue); }, [queue]);
     useEffect(() => { saveJSON('recipe_categories', categories); }, [categories]);
+
+    // 菜/分类变更后防抖推送整库到后端（挂载拉取完成后才推，避免覆盖远端）
+    useEffect(() => {
+        if (!hydratedRef.current) return;
+        if (pushTimerRef.current) clearTimeout(pushTimerRef.current);
+        pushTimerRef.current = setTimeout(() => {
+            setSyncState('syncing');
+            pushLibrary({ dishes: savedDishes, categories })
+                .then(() => setSyncState('synced'))
+                .catch(() => setSyncState('local-only'));
+        }, 800);
+        return () => { if (pushTimerRef.current) clearTimeout(pushTimerRef.current); };
+    }, [savedDishes, categories]);
 
     /** Generate a robust unique ID */
     const generateId = () => {
@@ -191,11 +240,43 @@ export function useRecipeStore() {
         ));
     }, []);
 
+    /** 整库替换（用于"整库替换"式导入或还原） */
+    const replaceAll = useCallback((dishes, cats) => {
+        setSavedDishes(dishes.map(d => ({
+            ...d,
+            _id: d._id || generateId(),
+            _savedAt: d._savedAt || Date.now(),
+        })));
+        if (Array.isArray(cats) && cats.length) setCategories(cats);
+    }, []);
+
+    /** 应用合并后的菜库（冲突已由调用方解决） */
+    const importLibrary = useCallback((mergedDishes, cats) => {
+        setSavedDishes(mergedDishes.map(d => ({
+            ...d,
+            _id: d._id || generateId(),
+            _savedAt: d._savedAt || Date.now(),
+        })));
+        if (Array.isArray(cats) && cats.length) {
+            setCategories(prev => Array.from(new Set([...prev, ...cats])));
+        }
+    }, []);
+
+    /** 导出当前整库快照 */
+    const exportData = useCallback(() => ({
+        dishes: savedDishes,
+        categories,
+    }), [savedDishes, categories]);
+
     return {
         savedDishes,
         queue,
         queueDishes,
         categories,
+        syncState,
+        replaceAll,
+        importLibrary,
+        exportData,
         saveDish,
         saveDishes,
         removeDish,
