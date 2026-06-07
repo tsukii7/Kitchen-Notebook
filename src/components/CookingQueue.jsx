@@ -10,16 +10,7 @@ import ImportConflictModal from './ImportConflictModal.jsx';
 import DishEditor from './DishEditor.jsx';
 import DishDetailBody from './DishDetailBody.jsx';
 import { useImportBackup } from '../hooks/useImportBackup.js';
-
-// Align with ResultsView colors
-const CAT_COLORS = {
-    '主料': { bg: 'var(--color-rose)', border: 'var(--color-rose-border)' },
-    '蔬菜': { bg: 'var(--color-mint)', border: 'var(--color-mint-border)' },
-    '调料': { bg: 'var(--color-peach)', border: 'var(--color-peach-border)' },
-    '香料': { bg: 'var(--color-lavender)', border: 'var(--color-lavender-border)' },
-    '液体': { bg: 'var(--color-blue)', border: 'var(--color-blue-border)' },
-    '其他': { bg: 'var(--color-paper)', border: 'var(--color-ink)' }
-};
+import { CAT_COLORS } from '../utils/ingredientColors.js';
 
 // Simplified CategoryDropdown - Select Only
 function CategoryDropdown({ selected, options, onSelect }) {
