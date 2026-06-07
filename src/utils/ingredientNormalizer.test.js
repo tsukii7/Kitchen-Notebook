@@ -14,6 +14,14 @@ describe('categorizeIngredient — sesame is a seasoning', () => {
     });
 });
 
+describe('categorizeIngredient — 葱/蒜/姜 forced to 蔬菜', () => {
+    it('forces any name containing 葱/蒜/姜 to 蔬菜, overriding AI category', () => {
+        for (const n of ['葱', '小葱', '大葱', '葱花', '大葱白', '蒜', '大蒜', '蒜末', '姜', '生姜', '姜丝', '青蒜']) {
+            expect(categorizeIngredient(n, '香料')).toBe('蔬菜');
+        }
+    });
+});
+
 const dish = (name, ingredients) => ({ dish_name: name, ingredients });
 
 describe('mergeIngredients — exact-name merging only', () => {
