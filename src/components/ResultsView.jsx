@@ -309,7 +309,7 @@ function ResultsView({ dishes, shoppingList, rawText, onReset, onExportJSON, onE
                                                                     padding: '0.2rem 0.6rem',
                                                                     borderRadius: '255px 15px 255px 15px / 15px 225px 15px 255px'
                                                                 }}>
-                                                                    {ing.name} <strong style={{ color: 'var(--color-ink)' }}>{ing.amount}</strong>
+                                                                    {ing.name} <strong style={{ color: 'var(--color-ink)' }}>{ing.amount}{ing.unit ? ` ${ing.unit}` : ''}</strong>
                                                                 </span>
                                                             );
                                                         }) : (

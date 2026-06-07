@@ -309,6 +309,9 @@ function CookingQueue({
             </div>
 
             <div className="queue-grid">
+                {savedDishes.length > 0 && visibleDishes.length === 0 && (
+                    <p style={{ textAlign: 'center', color: 'var(--color-ink-muted)', padding: '2rem' }}>无匹配菜谱</p>
+                )}
                 <AnimatePresence mode="popLayout">
                     {visibleDishes.map((dish, i) => {
                         const inQueue = queue.includes(dish._id);

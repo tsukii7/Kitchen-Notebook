@@ -27,7 +27,7 @@ function DishDetailBody({ dish }) {
                             fontSize: '1rem',
                             display: 'flex', alignItems: 'center', gap: '0.3rem'
                         }}>
-                            {ing.name} <strong style={{ color: 'var(--color-ink)' }}>{ing.amount}</strong>
+                            {ing.name} <strong style={{ color: 'var(--color-ink)' }}>{ing.amount}{ing.unit ? ` ${ing.unit}` : ''}</strong>
                         </span>
                     );
                 })}
