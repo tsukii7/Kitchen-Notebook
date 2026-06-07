@@ -112,6 +112,9 @@ export function normalizeName(rawName) {
  * @param {string} [aiCategory] - Optional category returned by AI
  */
 export function categorizeIngredient(name, aiCategory) {
+    // 葱/蒜/姜 类一律归「蔬菜」（需着重采购的新鲜食材），优先于 AI 分类
+    if (/[葱蒜姜]/.test(name || '')) return '蔬菜';
+
     // If AI provided a valid category, trust it (mostly)
     const validCategories = Object.keys(CATEGORIES);
     if (aiCategory && validCategories.includes(aiCategory)) {
