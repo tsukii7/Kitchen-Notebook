@@ -12,6 +12,8 @@ import DishDetailBody from './DishDetailBody.jsx';
 import { useImportBackup } from '../hooks/useImportBackup.js';
 import { CAT_COLORS } from '../utils/ingredientColors.js';
 
+const normalizeForSearch = (s) => (s || '').replace(/\s+/g, '').toLowerCase();
+
 // Simplified CategoryDropdown - Select Only
 function CategoryDropdown({ selected, options, onSelect }) {
     const [isOpen, setIsOpen] = useState(false);
@@ -99,6 +101,7 @@ function CookingQueue({
     const [activeDish, setActiveDish] = useState(null);
     const [editingDish, setEditingDish] = useState(false);
     const [activeCategory, setActiveCategory] = useState('全部');
+    const [searchTerm, setSearchTerm] = useState('');
     const [isAddingCategory, setIsAddingCategory] = useState(false);
     const [newCategoryName, setNewCategoryName] = useState('');
     const [confirmDeleteCategory, setConfirmDeleteCategory] = useState(null);
@@ -131,6 +134,14 @@ function CookingQueue({
         if (activeCategory === '全部') return savedDishes;
         return savedDishes.filter(d => d.category === activeCategory);
     }, [savedDishes, activeCategory]);
+
+    const visibleDishes = useMemo(() => {
+        const term = normalizeForSearch(searchTerm);
+        if (term === '') return filteredDishes;
+        return filteredDishes.filter(d =>
+            normalizeForSearch(d.dish_name || d.name).includes(term)
+        );
+    }, [filteredDishes, searchTerm]);
 
     const handleAddCategory = () => {
         if (!newCategoryName.trim()) return;
@@ -228,6 +239,15 @@ function CookingQueue({
                     </div>
                 </div>
 
+                {/* Search Input */}
+                <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                    placeholder="搜索菜名…"
+                    style={{ padding: '0.5rem 0.8rem', border: '2px solid var(--color-ink)', borderRadius: '6px', width: '100%', maxWidth: '320px', marginBottom: '1rem' }}
+                />
+
                 {/* Category Bar */}
                 <div className="category-bar" style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem', alignItems: 'center' }}>
                     <button
@@ -284,7 +304,7 @@ function CookingQueue({
 
             <div className="queue-grid">
                 <AnimatePresence mode="popLayout">
-                    {filteredDishes.map((dish, i) => {
+                    {visibleDishes.map((dish, i) => {
                         const inQueue = queue.includes(dish._id);
                         return (
                             <motion.div
