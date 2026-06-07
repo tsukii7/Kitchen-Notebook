@@ -1,10 +1,10 @@
 import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ClipboardList, ShoppingCart, UtensilsCrossed, ChevronDown, Save, Check, Download, Copy, RotateCcw, FileText, AlertTriangle, Pencil, Plus, Trash2 } from 'lucide-react';
+import { ClipboardList, ShoppingCart, UtensilsCrossed, ChevronDown, Save, Check, Download, Copy, RotateCcw, FileText, AlertTriangle, Pencil } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { CATEGORIES } from '../utils/ingredientNormalizer';
 import { useWobbly } from '../hooks/useWobbly';
-import CustomSelect from './CustomSelect.jsx';
+import DishEditor from './DishEditor.jsx';
 import { CAT_COLORS } from '../utils/ingredientColors.js';
 
 const ALL_CATEGORIES = ['全部', ...Object.keys(CATEGORIES), '其他'];
@@ -24,7 +24,6 @@ function ResultsView({ dishes, shoppingList, rawText, onReset, onExportJSON, onE
     const [activeCategory, setActiveCategory] = useState('全部');
     const [expandedDishes, setExpandedDishes] = useState(() => new Set(dishes.map((_, i) => i)));
     const [editModeDishIdx, setEditModeDishIdx] = useState(null);
-    const [draftIngredients, setDraftIngredients] = useState([]);
 
     const resultBlockWobble = useWobbly({ min: 2, max: 4 });
     const pillWobble = useWobbly({ min: 5, max: 15 });
@@ -278,7 +277,7 @@ function ResultsView({ dishes, shoppingList, rawText, onReset, onExportJSON, onE
                                                     {editModeDishIdx !== idx && (
                                                         <button
                                                             className="btn-icon"
-                                                            onClick={(e) => { e.stopPropagation(); setEditModeDishIdx(idx); setDraftIngredients([...(dish.ingredients || [])]); }}
+                                                            onClick={(e) => { e.stopPropagation(); setEditModeDishIdx(idx); }}
                                                             style={{ padding: '0.2rem 0.5rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'var(--color-white)', border: '2px solid var(--color-ink)', borderRadius: '4px', cursor: 'pointer', boxShadow: '1px 1px 0 var(--color-ink)' }}
                                                         >
                                                             <Pencil size={14} /> {t('results.editIngredients')}
@@ -287,68 +286,12 @@ function ResultsView({ dishes, shoppingList, rawText, onReset, onExportJSON, onE
                                                 </div>
 
                                                 {editModeDishIdx === idx ? (
-                                                    <div className="dish-ingredients-edit" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.5rem', background: 'rgba(255,255,255,0.5)', padding: '1rem', borderRadius: '8px', border: `2px dashed ${color.border}` }} onClick={e => e.stopPropagation()}>
-                                                        {draftIngredients.map((ing, i) => (
-                                                            <div key={i} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                                                <input
-                                                                    type="text"
-                                                                    value={ing.name}
-                                                                    onChange={e => {
-                                                                        const newDraft = [...draftIngredients];
-                                                                        newDraft[i].name = e.target.value;
-                                                                        setDraftIngredients(newDraft);
-                                                                    }}
-                                                                    placeholder={t('results.ingredientName')}
-                                                                    style={{ flex: 1, padding: '0.4rem', border: '2px solid var(--color-ink)', borderRadius: '4px' }}
-                                                                />
-                                                                <input
-                                                                    type="text"
-                                                                    value={ing.amount}
-                                                                    onChange={e => {
-                                                                        const newDraft = [...draftIngredients];
-                                                                        newDraft[i].amount = e.target.value;
-                                                                        setDraftIngredients(newDraft);
-                                                                    }}
-                                                                    placeholder={t('results.ingredientAmount')}
-                                                                    style={{ width: '80px', padding: '0.4rem', border: '2px solid var(--color-ink)', borderRadius: '4px' }}
-                                                                />
-                                                                <CustomSelect
-                                                                    value={ing.category}
-                                                                    onChange={val => {
-                                                                        const newDraft = [...draftIngredients];
-                                                                        newDraft[i].category = val;
-                                                                        setDraftIngredients(newDraft);
-                                                                    }}
-                                                                    options={Object.keys(CAT_COLORS)}
-                                                                />
-                                                                <button onClick={() => setDraftIngredients(draftIngredients.filter((_, idx) => idx !== i))} style={{ background: 'none', border: 'none', color: 'var(--color-accent)', cursor: 'pointer', padding: '0.2rem' }}>
-                                                                    <Trash2 size={18} />
-                                                                </button>
-                                                            </div>
-                                                        ))}
-                                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem' }}>
-                                                            <button
-                                                                onClick={() => setDraftIngredients([...draftIngredients, { name: '', amount: '', category: '主料' }])}
-                                                                style={{ background: 'none', border: '2px dashed var(--color-ink-muted)', padding: '0.4rem 0.8rem', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.9rem', color: 'var(--color-ink)' }}
-                                                            >
-                                                                <Plus size={16} /> {t('results.addRow')}
-                                                            </button>
-                                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                                <button
-                                                                    onClick={() => setEditModeDishIdx(null)}
-                                                                    style={{ background: 'var(--color-white)', border: '2px solid var(--color-ink)', padding: '0.4rem 0.8rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.9rem', boxShadow: '1px 1px 0 var(--color-ink)' }}
-                                                                >{t('results.cancel')}</button>
-                                                                <button
-                                                                    onClick={() => {
-                                                                        const finalIngredients = draftIngredients.filter(ing => ing.name.trim());
-                                                                        onUpdateDish(idx, { ...dish, ingredients: finalIngredients });
-                                                                        setEditModeDishIdx(null);
-                                                                    }}
-                                                                    style={{ background: 'var(--color-secondary)', color: 'white', border: '2px solid var(--color-ink)', padding: '0.4rem 0.8rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.9rem', boxShadow: '1px 1px 0 var(--color-ink)' }}
-                                                                >{t('results.confirm')}</button>
-                                                            </div>
-                                                        </div>
-                                                    </div>
+                                                    <DishEditor
+                                                        dish={dish}
+                                                        categories={[]}
+                                                        onSave={(normalized) => { onUpdateDish(idx, normalized); setEditModeDishIdx(null); }}
+                                                        onCancel={() => setEditModeDishIdx(null)}
+                                                    />
                                                 ) : (
                                                     <div className="dish-ingredients" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1.5rem' }}>
                                                         {(dish.ingredients || []).length > 0 ? dish.ingredients.map((ing, i) => {
@@ -369,14 +312,16 @@ function ResultsView({ dishes, shoppingList, rawText, onReset, onExportJSON, onE
                                                     </div>
                                                 )}
 
-                                                <div className="dish-steps" style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-                                                    {(dish.steps || []).map((step, si) => (
-                                                        <div key={si} className="step-item" style={{ display: 'flex', gap: '0.8rem' }}>
-                                                            <span className="step-num" style={{ fontWeight: 'bold', color: color.border }}>{si + 1}.</span>
-                                                            <span className="step-text" style={{ flex: 1 }}>{step}</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
+                                                {editModeDishIdx !== idx && (
+                                                    <div className="dish-steps" style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                                                        {(dish.steps || []).map((step, si) => (
+                                                            <div key={si} className="step-item" style={{ display: 'flex', gap: '0.8rem' }}>
+                                                                <span className="step-num" style={{ fontWeight: 'bold', color: color.border }}>{si + 1}.</span>
+                                                                <span className="step-text" style={{ flex: 1 }}>{step}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </motion.div>
                                         )}
                                     </AnimatePresence>
