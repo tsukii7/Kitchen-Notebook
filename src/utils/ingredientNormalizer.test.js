@@ -1,0 +1,48 @@
+import { describe, it, expect } from 'vitest';
+import { mergeIngredients } from './ingredientNormalizer.js';
+
+const dish = (name, ingredients) => ({ dish_name: name, ingredients });
+
+describe('mergeIngredients — exact-name merging only', () => {
+    it('does NOT merge 干辣椒 and 辣椒 (different names)', () => {
+        const out = mergeIngredients([
+            dish('A', [{ name: '干辣椒', amount: '40', unit: 'g', category: '香料' }]),
+            dish('B', [{ name: '辣椒', amount: '100', unit: 'g', category: '蔬菜' }]),
+        ]);
+        const names = out.map(i => i.name);
+        expect(names).toContain('干辣椒');
+        expect(names).toContain('辣椒');
+        expect(out).toHaveLength(2);
+    });
+
+    it('does NOT merge synonyms like 西红柿 and 番茄 — keeps original names verbatim', () => {
+        const out = mergeIngredients([
+            dish('A', [{ name: '西红柿', amount: '2', unit: '个', category: '蔬菜' }]),
+            dish('B', [{ name: '番茄', amount: '1', unit: '个', category: '蔬菜' }]),
+        ]);
+        const names = out.map(i => i.name);
+        expect(names).toContain('西红柿');
+        expect(names).toContain('番茄');
+        expect(out).toHaveLength(2);
+    });
+
+    it('merges and sums ingredients whose names are exactly identical', () => {
+        const out = mergeIngredients([
+            dish('A', [{ name: '辣椒', amount: '40', unit: 'g', category: '蔬菜' }]),
+            dish('B', [{ name: '辣椒', amount: '100', unit: 'g', category: '蔬菜' }]),
+        ]);
+        expect(out).toHaveLength(1);
+        expect(out[0].name).toBe('辣椒');
+        expect(out[0].amount).toContain('140');
+        expect(out[0].sources).toEqual(['A', 'B']);
+    });
+
+    it('treats names differing only by whitespace as the same (trim)', () => {
+        const out = mergeIngredients([
+            dish('A', [{ name: ' 盐 ', amount: '2', unit: 'g', category: '调料' }]),
+            dish('B', [{ name: '盐', amount: '3', unit: 'g', category: '调料' }]),
+        ]);
+        expect(out).toHaveLength(1);
+        expect(out[0].name).toBe('盐');
+    });
+});

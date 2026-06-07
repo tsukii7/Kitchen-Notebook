@@ -115,7 +115,8 @@ export function mergeIngredients(allDishes) {
 
     for (const dish of allDishes) {
         for (const ing of (dish.ingredients || [])) {
-            const { normalized: name, wasRenamed, original, notes } = normalizeName(ing.name);
+            // 完全按原始食材名合并：逐字相同才合并，不做同义词/修饰词归一化，显示名用原文
+            const name = (ing.name || '').trim();
             if (!name) continue;
 
             if (!merged[name]) {
@@ -138,12 +139,6 @@ export function mergeIngredients(allDishes) {
             const dishName = dish.dish_name || dish.name;
             if (!merged[name].sources.includes(dishName)) {
                 merged[name].sources.push(dishName);
-            }
-            if (wasRenamed && !merged[name].renames.includes(original)) {
-                merged[name].renames.push(original);
-            }
-            if (notes.length > 0) {
-                merged[name].notes.push(...notes);
             }
         }
     }
