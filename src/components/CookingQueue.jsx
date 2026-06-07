@@ -12,7 +12,7 @@ import { UtensilsCrossed, Trash2, Maximize2, X, Download, Share2, CornerDownRigh
 import { useWobbly } from '../hooks/useWobbly';
 import { useTranslation } from 'react-i18next';
 import { buildBackup } from '../utils/recipeBackup.js';
-import { buildShoppingListText } from '../utils/shoppingListText.js';
+import { buildShoppingListText, excludeNonPurchasable } from '../utils/shoppingListText.js';
 import ImportConflictModal from './ImportConflictModal.jsx';
 import DishEditor from './DishEditor.jsx';
 import DishDetailBody from './DishDetailBody.jsx';
@@ -134,7 +134,7 @@ function CookingQueue({
 
     const mergedList = useMemo(() => {
         if (queueDishes.length === 0) return [];
-        return mergeIngredients(queueDishes);
+        return excludeNonPurchasable(mergeIngredients(queueDishes));
     }, [queueDishes]);
 
     const filteredDishes = useMemo(() => {
