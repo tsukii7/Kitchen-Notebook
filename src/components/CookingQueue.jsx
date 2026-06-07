@@ -7,6 +7,8 @@ import { useWobbly } from '../hooks/useWobbly';
 import { useTranslation } from 'react-i18next';
 import { buildBackup } from '../utils/recipeBackup.js';
 import ImportConflictModal from './ImportConflictModal.jsx';
+import DishEditor from './DishEditor.jsx';
+import DishDetailBody from './DishDetailBody.jsx';
 import { useImportBackup } from '../hooks/useImportBackup.js';
 
 // Align with ResultsView colors
@@ -93,6 +95,7 @@ function CookingQueue({
     addCategory,
     deleteCategory,
     updateDishCategory,
+    updateDish,
     addToast,
     exportData,
     importLibrary,
@@ -103,6 +106,7 @@ function CookingQueue({
     const [showClearConfirm, setShowClearConfirm] = useState(false);
     const [exporting, setExporting] = useState(false);
     const [activeDish, setActiveDish] = useState(null);
+    const [editingDish, setEditingDish] = useState(false);
     const [activeCategory, setActiveCategory] = useState('全部');
     const [isAddingCategory, setIsAddingCategory] = useState(false);
     const [newCategoryName, setNewCategoryName] = useState('');
@@ -118,6 +122,7 @@ function CookingQueue({
         const recent = savedDishes.find(d => now - (d._savedAt || 0) < 2000);
         if (recent) {
             setActiveDish(recent);
+            setEditingDish(false);
         }
     }, [savedDishes]);
 
@@ -166,6 +171,11 @@ function CookingQueue({
             setExporting(false);
         }
     }, [queueDishes, addToast]);
+
+    const openDish = useCallback((dish) => {
+        setActiveDish(dish);
+        setEditingDish(false);
+    }, []);
 
     const confirmClearAll = useCallback(() => {
         clearAll();
@@ -313,7 +323,7 @@ function CookingQueue({
                                 }} />
 
                                 <div className="queue-card-header"
-                                    onClick={() => setActiveDish(dish)}
+                                    onClick={() => openDish(dish)}
                                     style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.8rem', cursor: 'pointer' }}
                                 >
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', flex: 1 }}>
@@ -350,7 +360,7 @@ function CookingQueue({
                                     </div>
                                 </div>
 
-                                <div className="queue-card-body" onClick={() => setActiveDish(dish)} style={{ cursor: 'pointer' }}>
+                                <div className="queue-card-body" onClick={() => openDish(dish)} style={{ cursor: 'pointer' }}>
 
                                     <div className="queue-meta" style={{ display: 'flex', gap: '0.8rem', fontSize: '0.85rem', color: 'var(--color-ink-muted)', marginBottom: '0.6rem' }}>
                                         <span>🥬 {dish.ingredients?.length || 0}</span>
@@ -573,7 +583,7 @@ function CookingQueue({
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        onClick={() => setActiveDish(null)}
+                        onClick={() => { setActiveDish(null); setEditingDish(false); }}
                         style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.2)', backdropFilter: 'blur(2px)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     >
                         <motion.div
@@ -596,50 +606,32 @@ function CookingQueue({
                                 background: 'var(--color-paper)'
                             }}>
                                 <h3 style={{ margin: 0, fontSize: '1.4rem' }}>{activeDish.dish_name || activeDish.name}</h3>
-                                <button className="modal-close" onClick={() => setActiveDish(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-ink)' }}>
-                                    <X size={24} strokeWidth={2.5} />
-                                </button>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    {!editingDish && (
+                                        <button className="btn-sm queue-btn" onClick={() => setEditingDish(true)} style={{ fontSize: '0.9rem', padding: '0.3rem 0.8rem' }}>编辑</button>
+                                    )}
+                                    <button className="modal-close" onClick={() => { setActiveDish(null); setEditingDish(false); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-ink)' }}>
+                                        <X size={24} strokeWidth={2.5} />
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="modal-body" style={{ padding: '1.5rem', overflowY: 'auto' }}>
-                                <h4 style={{ fontSize: '1.1rem', margin: '0 0 1rem', color: 'var(--color-ink)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <span style={{ fontSize: '1.4rem' }}>🥬</span> {t('results.ingredients')}
-                                </h4>
-                                <div className="dish-ingredients" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '2rem' }}>
-                                    {(activeDish.ingredients || []).map((ing, i) => {
-                                        const cat = ing.category ? CAT_COLORS[ing.category] : CAT_COLORS['其他'];
-                                        return (
-                                            <span key={i} className="ingredient-tag" style={{
-                                                background: cat ? cat.bg : 'rgba(255,255,255,0.5)',
-                                                border: `1px solid ${cat ? cat.border : 'var(--color-ink)'}`,
-                                                padding: '0.3rem 0.8rem',
-                                                borderRadius: '255px 15px 255px 15px / 15px 225px 15px 255px',
-                                                fontSize: '1rem',
-                                                display: 'flex', alignItems: 'center', gap: '0.3rem'
-                                            }}>
-                                                {ing.name} <strong style={{ color: 'var(--color-ink)' }}>{ing.amount}</strong>
-                                            </span>
-                                        );
-                                    })}
-                                </div>
-
-                                <h4 style={{ fontSize: '1.1rem', margin: '0 0 1rem', color: 'var(--color-ink)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <span style={{ fontSize: '1.4rem' }}>🍳</span> {t('results.steps')}
-                                </h4>
-                                <div className="dish-steps" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                    {(activeDish.steps || []).map((step, si) => (
-                                        <div key={si} className="step-item" style={{ display: 'flex', gap: '1rem', fontSize: '1rem', lineHeight: '1.5' }}>
-                                            <span className="step-num" style={{
-                                                fontWeight: 'bold', color: 'var(--color-white)',
-                                                background: 'var(--color-ink-muted)',
-                                                width: '24px', height: '24px', borderRadius: '50%',
-                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                flexShrink: 0, fontSize: '0.9rem'
-                                            }}>{si + 1}</span>
-                                            <span className="step-text" style={{ flex: 1 }}>{step}</span>
-                                        </div>
-                                    ))}
-                                </div>
+                                {editingDish ? (
+                                    <DishEditor
+                                        dish={activeDish}
+                                        categories={categories}
+                                        onSave={(normalized) => {
+                                            updateDish(activeDish._id, normalized);
+                                            setActiveDish(normalized);
+                                            setEditingDish(false);
+                                            addToast('菜谱已更新', 'success');
+                                        }}
+                                        onCancel={() => setEditingDish(false)}
+                                    />
+                                ) : (
+                                    <DishDetailBody dish={activeDish} />
+                                )}
                             </div>
                         </motion.div>
                     </motion.div>
