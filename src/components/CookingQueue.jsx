@@ -8,10 +8,11 @@ import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion';
 import html2canvas from 'html2canvas';
 import { mergeIngredients, CATEGORIES } from '../utils/ingredientNormalizer';
-import { UtensilsCrossed, Trash2, Maximize2, X, Download, Share2, CornerDownRight, ExternalLink, ChevronDown, AlertTriangle, ShoppingCart, Inbox, Loader2, Camera } from 'lucide-react';
+import { UtensilsCrossed, Trash2, Maximize2, X, Download, Share2, CornerDownRight, ExternalLink, ChevronDown, AlertTriangle, ShoppingCart, Inbox, Loader2, Camera, Copy } from 'lucide-react';
 import { useWobbly } from '../hooks/useWobbly';
 import { useTranslation } from 'react-i18next';
 import { buildBackup } from '../utils/recipeBackup.js';
+import { buildShoppingListText } from '../utils/shoppingListText.js';
 import ImportConflictModal from './ImportConflictModal.jsx';
 import DishEditor from './DishEditor.jsx';
 import DishDetailBody from './DishDetailBody.jsx';
@@ -179,6 +180,16 @@ function CookingQueue({
             setExporting(false);
         }
     }, [queueDishes, addToast]);
+
+    const handleCopyText = useCallback(async () => {
+        const text = buildShoppingListText(queueDishes.map(d => d.dish_name || d.name), mergedList);
+        try {
+            await navigator.clipboard.writeText(text);
+            addToast?.('已复制到剪贴板', 'success');
+        } catch {
+            addToast?.('复制失败，请重试', 'error');
+        }
+    }, [queueDishes, mergedList, addToast]);
 
     const openDish = useCallback((dish) => {
         setActiveDish(dish);
@@ -549,16 +560,6 @@ function CookingQueue({
                                                 </div>
                                             );
                                         })}
-
-                                        {/* Handle "Other" category separately if not covered (though map handles it if in CATEGORIES) */}
-                                        {mergedList.filter(item => !Object.keys(CATEGORIES).includes(item.category)).length > 0 && (
-                                            <div className="category-section">
-                                                <h4 style={{ margin: '0 0 1rem 0', fontSize: '1.2rem' }}>{t('ingCategories.其他')}</h4>
-                                                <table className="merge-table" style={{ width: '100%' }}>
-                                                    {/* ... render table for others ... */}
-                                                </table>
-                                            </div>
-                                        )}
                                     </div>
 
                                     {mergedList.some(i => i.warning) && (
@@ -578,6 +579,13 @@ function CookingQueue({
                                 background: 'var(--color-paper)',
                                 display: 'flex', justifyContent: 'flex-end', gap: '1rem'
                             }}>
+                                <button
+                                    className="btn-secondary"
+                                    onClick={handleCopyText}
+                                    style={{ fontSize: '1rem', padding: '0.5rem 1.2rem' }}
+                                >
+                                    <Copy size={18} strokeWidth={2.5} /> 复制文字版
+                                </button>
                                 <button
                                     className="btn-primary"
                                     onClick={handleExportImage}
