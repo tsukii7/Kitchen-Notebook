@@ -58,6 +58,28 @@ for (const [canonical, aliases] of Object.entries(SYNONYM_MAP)) {
 }
 
 /**
+ * 合并用「真同义词」白名单：仅"同一物、只是叫法不同"的食材才在采购清单合并。
+ * 不含不同物/不同形态（如 干辣椒↔辣椒、生抽↔老抽、花椒粒↔花椒粉）。
+ */
+const MERGE_SYNONYMS = {
+    '番茄': ['西红柿', '蕃茄'],
+    '土豆': ['马铃薯', '洋芋'],
+};
+const _mergeCanonical = {};
+for (const [canonical, aliases] of Object.entries(MERGE_SYNONYMS)) {
+    _mergeCanonical[canonical] = canonical;
+    for (const alias of aliases) {
+        _mergeCanonical[alias] = canonical;
+    }
+}
+
+/** 解析合并键：白名单内的真同义词归到统一名，否则用原名 */
+export function mergeKey(rawName) {
+    const name = (rawName || '').trim();
+    return _mergeCanonical[name] || name;
+}
+
+/**
  * Normalize an ingredient name: strip modifiers, map synonyms
  */
 export function normalizeName(rawName) {
@@ -115,8 +137,8 @@ export function mergeIngredients(allDishes) {
 
     for (const dish of allDishes) {
         for (const ing of (dish.ingredients || [])) {
-            // 完全按原始食材名合并：逐字相同才合并，不做同义词/修饰词归一化，显示名用原文
-            const name = (ing.name || '').trim();
+            // 按原始食材名合并：逐字相同才合并；仅白名单内的真同义词（西红柿=番茄、土豆=马铃薯）归一
+            const name = mergeKey(ing.name);
             if (!name) continue;
 
             if (!merged[name]) {
