@@ -63,6 +63,20 @@ describe('buildShoppingListText', () => {
         expect(txt).toContain('共 1 项食材');
     });
 
+    it('clusters similar items together within a category (不同葱/不同姜)', () => {
+        const list = [
+            { name: '姜', amount: '1 g', category: '蔬菜', warning: false },
+            { name: '大葱', amount: '1 g', category: '蔬菜', warning: false },
+            { name: '生姜', amount: '1 g', category: '蔬菜', warning: false },
+            { name: '葱花', amount: '1 g', category: '蔬菜', warning: false },
+            { name: '番茄', amount: '1 个', category: '蔬菜', warning: false },
+        ];
+        const lines = buildShoppingListText(['A'], list).split('\n').filter(l => l.startsWith('- [ ]'));
+        const idx = (n) => lines.findIndex(l => l.includes(n));
+        expect(Math.abs(idx('大葱') - idx('葱花'))).toBe(1); // 葱类相邻
+        expect(Math.abs(idx('姜') - idx('生姜'))).toBe(1);   // 姜类相邻
+    });
+
     it('handles items without an amount', () => {
         const txt = buildShoppingListText(['A'], [{ name: '盐', amount: '', category: '调料', warning: false }]);
         expect(txt).toContain('- [ ] 盐');
