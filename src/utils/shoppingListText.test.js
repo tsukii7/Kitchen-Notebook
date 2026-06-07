@@ -49,6 +49,20 @@ describe('buildShoppingListText', () => {
         expect(txt).toContain('- [ ] 神秘物 1');
     });
 
+    it('excludes water-type ingredients (清水/水/开水) from the list and count', () => {
+        const list = [
+            { name: '清水', amount: '100 g', category: '液体', warning: false },
+            { name: '开水', amount: '适量', category: '液体', warning: false },
+            { name: '水', amount: '5 碗', category: '液体', warning: false },
+            { name: '啤酒', amount: '1 瓶', category: '液体', warning: false },
+        ];
+        const txt = buildShoppingListText(['A'], list);
+        expect(txt).not.toContain('清水');
+        expect(txt).not.toContain('开水');
+        expect(txt).toContain('- [ ] 啤酒 1 瓶');
+        expect(txt).toContain('共 1 项食材');
+    });
+
     it('handles items without an amount', () => {
         const txt = buildShoppingListText(['A'], [{ name: '盐', amount: '', category: '调料', warning: false }]);
         expect(txt).toContain('- [ ] 盐');
