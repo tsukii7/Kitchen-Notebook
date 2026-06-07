@@ -15,6 +15,30 @@ export function excludeNonPurchasable(list) {
     return (list || []).filter((i) => !NON_PURCHASABLE.has((i.name || '').trim()));
 }
 
+// 同类食材聚类排序用的「核心词」，按此顺序分组（不同葱排一起、不同姜排一起…）
+const SIMILARITY_ANCHORS = [
+    '葱', '姜', '蒜', '辣椒', '花椒', '胡椒', '椒',
+    '番茄', '土豆', '萝卜', '茄', '豆腐', '豆', '菜',
+    '排骨', '肉', '鸡', '牛', '鱼', '虾', '蛋', '米', '面',
+    '盐', '糖', '醋', '生抽', '老抽', '酱油', '酱', '料酒', '黄酒', '酒',
+    '蚝油', '芝麻', '淀粉', '粉', '油',
+];
+
+function similarityKey(name) {
+    const idx = SIMILARITY_ANCHORS.findIndex((a) => (name || '').includes(a));
+    return idx === -1 ? SIMILARITY_ANCHORS.length : idx;
+}
+
+/** 在同一分类内把同类食材排到相邻（先按核心词分组，组内按名称） */
+export function sortBySimilarity(items) {
+    return [...(items || [])].sort((a, b) => {
+        const ka = similarityKey(a.name);
+        const kb = similarityKey(b.name);
+        if (ka !== kb) return ka - kb;
+        return (a.name || '').localeCompare(b.name || '', 'zh');
+    });
+}
+
 function categoryOf(item) {
     return KNOWN_CATEGORIES.includes(item.category) ? item.category : '其他';
 }
@@ -30,7 +54,7 @@ export function buildShoppingListText(dishNames, mergedList) {
     const title = `采购清单（${(dishNames || []).join(' + ')}）`;
     const count = `共 ${items.length} 项食材`;
     const blocks = CATEGORY_ORDER.map((cat) => {
-        const inCat = items.filter((i) => categoryOf(i) === cat);
+        const inCat = sortBySimilarity(items.filter((i) => categoryOf(i) === cat));
         if (inCat.length === 0) return null;
         return `${cat}\n${inCat.map(ingredientLine).join('\n')}`;
     }).filter(Boolean);

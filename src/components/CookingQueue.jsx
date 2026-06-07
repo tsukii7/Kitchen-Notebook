@@ -12,7 +12,7 @@ import { UtensilsCrossed, Trash2, Maximize2, X, Download, Share2, CornerDownRigh
 import { useWobbly } from '../hooks/useWobbly';
 import { useTranslation } from 'react-i18next';
 import { buildBackup } from '../utils/recipeBackup.js';
-import { buildShoppingListText, excludeNonPurchasable } from '../utils/shoppingListText.js';
+import { buildShoppingListText, excludeNonPurchasable, sortBySimilarity } from '../utils/shoppingListText.js';
 import ImportConflictModal from './ImportConflictModal.jsx';
 import DishEditor from './DishEditor.jsx';
 import DishDetailBody from './DishDetailBody.jsx';
@@ -512,7 +512,7 @@ function CookingQueue({
 
                                     <div className="merge-table-container">
                                         {Object.entries(CATEGORIES).map(([catName, _]) => {
-                                            const itemsInCat = mergedList.filter(item => item.category === catName);
+                                            const itemsInCat = sortBySimilarity(mergedList.filter(item => item.category === catName));
                                             if (itemsInCat.length === 0) return null;
 
                                             const catTheme = CAT_COLORS[catName] || CAT_COLORS['其他'];
