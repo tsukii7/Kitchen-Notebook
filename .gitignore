@@ -40,3 +40,6 @@ uploads/
 
 # Server data directory
 server/data/
+
+# local screenshots
+Screenshot/
