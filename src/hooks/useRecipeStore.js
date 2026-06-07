@@ -1,6 +1,6 @@
 /**
  * [IN]: react, dishesApi(fetchLibrary/pushLibrary); localStorage(STORAGE_KEY, QUEUE_KEY, recipe_categories)
- * [OUT]: useRecipeStore() — 菜库主 store：mount 时从后端拉取/迁移，变更后 800ms 防抖推送；暴露 syncState、importLibrary、replaceAll、exportData 及完整 CRUD
+ * [OUT]: useRecipeStore() — 菜库主 store：mount 时从后端拉取/迁移，变更后 800ms 防抖推送；暴露 syncState、importLibrary、replaceAll、exportData、updateDish(id, dish) 及完整 CRUD
  * [POS]: 被 App.jsx 实例化，props 下发至 CookingQueue、ResultsView 等
  * [PROTOCOL]: 变更接口形态时同步本头部、src/hooks/CLAUDE.md；变更后端协议时同步 dishesApi.js 与 server/index.js
  */
@@ -253,6 +253,16 @@ export function useRecipeStore() {
         ));
     }, []);
 
+    /** 按 _id 整体更新一道已保存的菜（菜名可变，故不按名匹配） */
+    const updateDish = useCallback((id, newDish) => {
+        if (newDish.category && newDish.category !== '未分类') {
+            setCategories(prev => (prev.includes(newDish.category) ? prev : [...prev, newDish.category]));
+        }
+        setSavedDishes(prev => prev.map(d =>
+            d._id === id ? { ...newDish, _id: id, _savedAt: Date.now() } : d
+        ));
+    }, []);
+
     /** 整库替换（用于"整库替换"式导入或还原） */
     const replaceAll = useCallback((dishes, cats) => {
         setSavedDishes(dishes.map(d => ({
@@ -301,5 +311,6 @@ export function useRecipeStore() {
         addCategory,
         deleteCategory,
         updateDishCategory,
+        updateDish,
     };
 }

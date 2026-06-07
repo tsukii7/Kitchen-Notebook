@@ -10,4 +10,6 @@
 | `subtitleParser.js` | Parses subtitle/SRT formats. |
 | `unitConverter.js` | Converts and normalises measurement units. |
 | `pipeline.js` | Orchestrates multi-step parse pipeline. |
+| `dishDraft.js` | Edit-draft helpers: `emptyIngredient()` — blank ingredient row template (preserves unit field); `normalizeDishDraft(draft, fallbackName)` — trims/filters draft before save. |
+| `ingredientColors.js` | `CAT_COLORS` — shared ingredient-category → colour-token map; consumed by DishEditor, DishDetailBody, ResultsView, CookingQueue. |
 | `recipeBackup.test.js` | Vitest unit tests for `recipeBackup.js`. |
