@@ -20,6 +20,13 @@ describe('categorizeIngredient — 葱/蒜/姜 forced to 蔬菜', () => {
             expect(categorizeIngredient(n, '香料')).toBe('蔬菜');
         }
     });
+
+    it('keeps dried-spice ginger forms (沙姜/良姜/干姜/姜黄) out of 蔬菜', () => {
+        expect(categorizeIngredient('沙姜', '香料')).toBe('香料');
+        expect(categorizeIngredient('高良姜', '香料')).toBe('香料');
+        expect(categorizeIngredient('干姜', '香料')).toBe('香料');
+        expect(categorizeIngredient('姜黄粉', '香料')).toBe('香料');
+    });
 });
 
 const dish = (name, ingredients) => ({ dish_name: name, ingredients });
