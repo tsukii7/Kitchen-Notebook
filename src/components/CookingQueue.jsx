@@ -1,3 +1,9 @@
+/**
+ * [IN]: react, framer-motion, html2canvas, lucide-react, react-i18next, ingredientNormalizer, useWobbly, recipeBackup(buildBackup), ImportConflictModal, DishEditor, DishDetailBody, useImportBackup, ingredientColors(CAT_COLORS)
+ * [OUT]: CookingQueue — 菜库面板：已存菜列表（含菜名搜索）、分类筛选、队列勾选、详情弹窗（只读/编辑切换）、购物清单合并、导入/导出备份
+ * [POS]: 被 App.jsx 渲染；通过 updateDish/removeDish 等 props 调用 useRecipeStore
+ * [PROTOCOL]: 变更 props、搜索逻辑或模态流程时同步本头部、src/components/CLAUDE.md
+ */
 import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import html2canvas from 'html2canvas';

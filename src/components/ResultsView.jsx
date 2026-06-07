@@ -1,3 +1,9 @@
+/**
+ * [IN]: react, framer-motion, lucide-react, react-i18next, ingredientNormalizer(CATEGORIES), useWobbly, DishEditor, ingredientColors(CAT_COLORS)
+ * [OUT]: ResultsView — 展示解析后的菜谱列表；支持分类过滤、折叠展开、内联编辑（DishEditor）、保存单菜/全部
+ * [POS]: 被 App.jsx 渲染；通过 onSaveDish/onUpdateDish/onSaveAll 写入 useRecipeStore
+ * [PROTOCOL]: 变更 props 或编辑流程时同步本头部、src/components/CLAUDE.md
+ */
 import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ClipboardList, ShoppingCart, UtensilsCrossed, ChevronDown, Save, Check, Download, Copy, RotateCcw, FileText, AlertTriangle, Pencil } from 'lucide-react';
