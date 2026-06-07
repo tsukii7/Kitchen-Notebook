@@ -1,6 +1,6 @@
 /**
  * [IN]: react, lucide-react(Plus/Trash2), dishDraft(emptyIngredient/normalizeDishDraft), CustomSelect, ingredientColors(CAT_COLORS)
- * [OUT]: DishEditor — 编辑一道菜（菜名/分类/含单位食材/步骤）的共享表单
+ * [OUT]: DishEditor — 编辑一道菜（菜名/分类/含单位食材/步骤）的共享表单；IngredientsSection、StepsSection 为内部展示子组件
  * [POS]: 被 ResultsView 与 CookingQueue 复用；onSave 收到规整后的菜对象
  * [PROTOCOL]: 变更字段集时同步更新本头部、dishDraft、相关消费方与设计文档
  */
@@ -55,6 +55,38 @@ function StepRow({ value, index, onChange, onRemove }) {
     );
 }
 
+function IngredientsSection({ ingredients, onChange, onRemove, onAdd }) {
+    return (
+        <div>
+            <h5 style={{ margin: '0 0 0.5rem' }}>食材</h5>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {ingredients.map((ing, i) => (
+                    <IngredientRow key={i} ing={ing} onChange={v => onChange(i, v)} onRemove={() => onRemove(i)} />
+                ))}
+            </div>
+            <button onClick={onAdd} style={addBtnStyle}>
+                <Plus size={16} /> 添加食材
+            </button>
+        </div>
+    );
+}
+
+function StepsSection({ steps, onChange, onRemove, onAdd }) {
+    return (
+        <div>
+            <h5 style={{ margin: '0 0 0.5rem' }}>步骤</h5>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {steps.map((s, i) => (
+                    <StepRow key={i} value={s} index={i} onChange={v => onChange(i, v)} onRemove={() => onRemove(i)} />
+                ))}
+            </div>
+            <button onClick={onAdd} style={addBtnStyle}>
+                <Plus size={16} /> 添加步骤
+            </button>
+        </div>
+    );
+}
+
 function mapIngredient(i) {
     return { name: i.name || '', amount: i.amount ?? '', unit: i.unit ?? '', category: i.category || '主料' };
 }
@@ -67,8 +99,6 @@ export default function DishEditor({ dish, categories, onSave, onCancel }) {
 
     const setIng = (idx, val) => setIngredients(prev => prev.map((x, i) => (i === idx ? val : x)));
     const setStep = (idx, val) => setSteps(prev => prev.map((x, i) => (i === idx ? val : x)));
-    const removeIng = idx => setIngredients(prev => prev.filter((_, i) => i !== idx));
-    const removeStep = idx => setSteps(prev => prev.filter((_, i) => i !== idx));
 
     const handleSave = () => {
         const normalized = normalizeDishDraft(
@@ -92,31 +122,18 @@ export default function DishEditor({ dish, categories, onSave, onCancel }) {
                     {!cats.includes(category) && <option value={category}>{category}</option>}
                 </select>
             </label>
-
-            <div>
-                <h5 style={{ margin: '0 0 0.5rem' }}>食材</h5>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    {ingredients.map((ing, i) => (
-                        <IngredientRow key={i} ing={ing} onChange={v => setIng(i, v)} onRemove={() => removeIng(i)} />
-                    ))}
-                </div>
-                <button onClick={() => setIngredients(prev => [...prev, emptyIngredient()])} style={addBtnStyle}>
-                    <Plus size={16} /> 添加食材
-                </button>
-            </div>
-
-            <div>
-                <h5 style={{ margin: '0 0 0.5rem' }}>步骤</h5>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    {steps.map((s, i) => (
-                        <StepRow key={i} value={s} index={i} onChange={v => setStep(i, v)} onRemove={() => removeStep(i)} />
-                    ))}
-                </div>
-                <button onClick={() => setSteps(prev => [...prev, ''])} style={addBtnStyle}>
-                    <Plus size={16} /> 添加步骤
-                </button>
-            </div>
-
+            <IngredientsSection
+                ingredients={ingredients}
+                onChange={setIng}
+                onRemove={(i) => setIngredients(prev => prev.filter((_, x) => x !== i))}
+                onAdd={() => setIngredients(prev => [...prev, emptyIngredient()])}
+            />
+            <StepsSection
+                steps={steps}
+                onChange={setStep}
+                onRemove={(i) => setSteps(prev => prev.filter((_, x) => x !== i))}
+                onAdd={() => setSteps(prev => [...prev, ''])}
+            />
             <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                 <button className="btn-secondary" onClick={onCancel}>取消</button>
                 <button className="btn-primary" onClick={handleSave}>保存</button>
