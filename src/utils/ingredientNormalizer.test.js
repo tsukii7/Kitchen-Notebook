@@ -1,5 +1,18 @@
 import { describe, it, expect } from 'vitest';
-import { mergeIngredients } from './ingredientNormalizer.js';
+import { mergeIngredients, categorizeIngredient } from './ingredientNormalizer.js';
+
+describe('categorizeIngredient — sesame is a seasoning', () => {
+    it('puts 白芝麻 in 调料 when no valid stored category', () => {
+        expect(categorizeIngredient('白芝麻', '其他')).toBe('调料');
+        expect(categorizeIngredient('白芝麻')).toBe('调料');
+    });
+    it('keeps 黑芝麻 in 调料', () => {
+        expect(categorizeIngredient('黑芝麻', '其他')).toBe('调料');
+    });
+    it('still respects a valid AI category for 芝麻油 (液体)', () => {
+        expect(categorizeIngredient('芝麻油', '液体')).toBe('液体');
+    });
+});
 
 const dish = (name, ingredients) => ({ dish_name: name, ingredients });
 
