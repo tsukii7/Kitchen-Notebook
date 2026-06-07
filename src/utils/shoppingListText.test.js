@@ -31,9 +31,10 @@ describe('buildShoppingListText', () => {
         expect(iVeg).toBeLessThan(iSeason);
     });
 
-    it('marks unit-conflict items while keeping all units visible', () => {
+    it('keeps all units visible without appending a conflict note', () => {
         const txt = buildShoppingListText(['A'], sample);
-        expect(txt).toContain('- [ ] 盐 适量 + 5 g（单位冲突，请核对）');
+        expect(txt).toContain('- [ ] 盐 适量 + 5 g');
+        expect(txt).not.toContain('单位冲突');
     });
 
     it('skips empty categories', () => {

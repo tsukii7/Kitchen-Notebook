@@ -13,9 +13,8 @@ function categoryOf(item) {
 
 function ingredientLine(item) {
     const amt = (item.amount || '').trim();
-    const base = `- [ ] ${item.name}${amt ? ' ' + amt : ''}`;
-    // 单位冲突时 amount 已含各单位（如「适量 + 5 g」），再标注提醒核对
-    return item.warning ? `${base}（单位冲突，请核对）` : base;
+    // amount 已含各单位（如「适量 + 5 g」），不再追加单位冲突提示
+    return `- [ ] ${item.name}${amt ? ' ' + amt : ''}`;
 }
 
 export function buildShoppingListText(dishNames, mergedList) {
